@@ -17,11 +17,11 @@ let userController={
             assert(typeof phoneNumber === 'string','phoneNumber must be a string.')
             next()
         }catch(err){
-            console.log(err)
-            res.status(400).json({
+            const error = {
                 status: 400,
-                result: err.toString()
-            })
+                result: err.message
+            }
+            next(error)
         }
     },
 
@@ -53,7 +53,7 @@ let userController={
 
     },
 
-    getUserById:(req, res) =>{
+    getUserById:(req, res, next) =>{
         const userId = req.params.userId
         let user = database.filter((item) => item.id == userId)
         if(user.length > 0){
@@ -63,10 +63,11 @@ let userController={
                 result: user
             })
         }else{
-            res.status(404).json({
+            const error = {
                 status: 404,
                 result: `Movie with ID ${userId} not found.`
-            })
+            }
+            next(error)
         }
     },
 

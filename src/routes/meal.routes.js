@@ -5,13 +5,6 @@ const mealController = require('../controllers/meal.controller')
 
 mealRouter.use(bodyParser.json())
 
-mealRouter.get('/', (req, res) => {
-    res.status(200).json({
-        status: 200,
-        result: 'Hello World!'
-    })
-})
-
 //UC-301 Register a new meal.
 mealRouter.post('/api/meal', mealController.addMeal)
 

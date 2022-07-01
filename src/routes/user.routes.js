@@ -6,13 +6,6 @@ const { validateUser } = require("../controllers/user.controller");
 
 userRouter.use(bodyParser.json())
 
-userRouter.get('/', (req, res) => {
-    res.status(200).json({
-        status: 200,
-        result: 'Hello World!'
-    })
-})
-
 //UC-201 Register a new user.
 userRouter.post('/api/user',userController.validateUser, userController.addUser)
 
