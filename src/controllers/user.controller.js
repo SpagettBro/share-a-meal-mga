@@ -1,7 +1,30 @@
+const assert = require('assert')
 let database = []
 let id = 0
 
 let userController={
+    validateUser:(req,res,next)=>{
+        let user = req.body
+        let {firstName, lastName, street, city, password, emailAddress, phoneNumber} = user
+
+        try{
+            assert(typeof firstName === 'string','firstName must be a string.')
+            assert(typeof lastName === 'string','lastName must be a string.')
+            assert(typeof street === 'string','street must be a string.')
+            assert(typeof city === 'string','city must be a string.')
+            assert(typeof password === 'string','password must be a string.')
+            assert(typeof emailAddress === 'string','emailaddress must be a string.')
+            assert(typeof phoneNumber === 'string','phoneNumber must be a string.')
+            next()
+        }catch(err){
+            console.log(err)
+            res.status(400).json({
+                status: 400,
+                result: err.toString()
+            })
+        }
+    },
+
     addUser:(req, res)=>{
         let user = req.body
         id++
@@ -51,6 +74,7 @@ let userController={
 
     },
 
+    //Werkt nog niet correct.
     deleteUser:(req, res) =>{
         const userId = req.params.userId
         let user = database.filter((item) => item.id == userId)

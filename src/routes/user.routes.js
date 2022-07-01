@@ -1,7 +1,8 @@
 const express = require("express")
 const bodyParser = require('body-parser')
 const userRouter = express.Router();
-const userController = require('../controllers/user.controller')
+const userController = require('../controllers/user.controller');
+const { validateUser } = require("../controllers/user.controller");
 
 userRouter.use(bodyParser.json())
 
@@ -13,7 +14,7 @@ userRouter.get('/', (req, res) => {
 })
 
 //UC-201 Register a new user.
-userRouter.post('/api/user', userController.addUser)
+userRouter.post('/api/user',userController.validateUser, userController.addUser)
 
 //UC-202 Get all users.
 userRouter.get('/api/user', userController.getAllUsers)
