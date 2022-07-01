@@ -1,86 +1,33 @@
 const express = require("express")
 const bodyParser = require('body-parser')
-const router = express.Router();
+const userRouter = express.Router();
+const userController = require('../controllers/user.controller')
 
-router.use(bodyParser.json())
+userRouter.use(bodyParser.json())
 
-let database = []
-let id = 0
-
-router.get('/', (req, res) => {
+userRouter.get('/', (req, res) => {
     res.status(200).json({
         status: 200,
         result: 'Hello World!'
     })
 })
 
-router.all('*', (req, res, next) => {
-    const method = req.method
-    console.log(`Methode ${method} aangeroepen.`)
-    next()
-})
+//UC-201 Register a new user.
+userRouter.post('/api/user', userController.addUser)
 
-router.get('/', (req, res) => {
-    res.status(200).json({
-        status: 200,
-        result: 'Hello World!'
-    })
-})
+//UC-202 Get all users.
+userRouter.get('/api/user', userController.getAllUsers)
 
-//UC-201 Register a new user
-router.post('/api/user', (req, res, next) => {
-    let user = req.body
-    id++
-    console.log(`User: ${user}`)
-    user={
-        id, 
-        ...user,
-    }
-    
-    database.push(user)
-    console.log(`Database: ${database}`)
-    res.status(201).json({
-        status: 201,
-        result: user
-    })
+//UC-203 Get personal user profile.
+userRouter.get('/api/user/profile', userController.getPersonalUserProfile)
 
-})
+//UC-204 Get Single user by Id.
+userRouter.get('/api/user/:userId', userController.getUserById)
 
-//UC-202 Get all users
-router.get('/api/user', (req, res) => {
-    res.status(200).json({
-        status: 200,
-        result: database
-    })
+//UC-205 Update a single user.
+userRouter.put('/api/user/:userId', userController.updateUser)
 
-})
+//UC-206 Delete a single user.
+userRouter.delete('/api/user/:userId', userController.deleteUser)
 
-//UC-204 Get Single user by Id
-router.get('/router/user/:userId', (req, res) =>{
-    const userId = req.params.userId
-    let user = database.filter((item) => item.id == userId)
-    if(user.length > 0){
-        console.log(user)
-        res.status(200).json({
-            status: 200,
-            result: user
-        })
-    }else{
-        res.status(404).json({
-            status: 404,
-            result: `Movie with ID ${userId} not found.`
-        })
-    }
-})
-
-//UC-205 Update a single user
-router.put('/router/user/:userId', (req, res) =>{
-    
-})
-
-//UC-206 Delete user
-router.delete('/router/user/:userId', (req, res) =>{
-    
-})
-
-module.exports = router
+module.exports = userRouter
