@@ -1,4 +1,6 @@
 const assert = require('assert')
+const dbconnection = require('../database/dbconnection')
+const logger = require('../config/config').logger
 let database = []
 let id = 0
 
@@ -26,26 +28,109 @@ let userController={
     },
 
     addUser:(req, res)=>{
-        let user = req.body
-        id++
-        console.log(`User: ${JSON.stringify(user)}`)
-        user={
-            id, 
-            ...user,
+        logger.info('register')
+        logger.info(req.body)
+
+        //Query the database to see if the email of the user to be registered already exists.
+        pool.getConnection((err, connection) => {
+        if (err) {
+            logger.error('Message: ' + err.toString())
+            const error = {
+                status: 500,
+                result: err.message
+            }
+            next(error)
         }
-    
-        database.push(user)
-        console.log(`Database: ${JSON.stringify(database)}`)
-        res.status(201).json({
-            status: 201,
-            result: user
+        if (connection) {
+            let { firstName, lastName, emailAdress, password, street, city } = req.body
+            connection.query(
+            'INSERT INTO `user` (`firstName`, `lastName`, `emailAdress`, `password`, `street`, `city`) VALUES (?, ?, ?, ?, ?, ?)',
+            [firstName, lastName, emailAdress, password, street, city],
+            (err, rows, fields) => {
+                connection.release()
+                if (err) {
+                // When the INSERT fails, we assume the user already exists
+                logger.error('Error: ' + err.toString())
+                res.status(400).json({
+                    message: err.toString()
+                })
+                } else {
+                logger.trace(rows)
+                // Create an object containing the data we want in the payload.
+                // This time we add the id of the newly inserted user
+                const payload = {
+                    id: rows.insertId
+                }
+                // Userinfo returned to the caller.
+                const userinfo = {
+                    id: rows[0].insertId,
+                    firstName: rows[0].firstName,
+                    lastName: rows[0].lastName,
+                    emailAdress: rows[0].emailAdress,
+                    street: rows[0].street,
+                    city: rows[0].city,
+                    phonenumber: rows[0].phonenumber,
+                    isActive: rows[0].isActive,
+                    token: jwt.sign(payload, jwtSecretKey, { expiresIn: '24h' })
+                }
+                logger.debug('Registered', userinfo)
+                res.status(200).json(userinfo)
+                }
+            }
+            )
+            // pool.end((err)=>{
+            //   console.log('Pool was colsed');
+            // })
+        }
         })
     },
 
-    getAllUsers:(req, res) => {
-        res.status(200).json({
-            status: 200,
-            result: database
+    getAllUsers:(req, res, next) => {
+        logger.trace('getAllUsers called')
+        logger.info(req.body)
+    
+        dbconnection.getConnection(function (err, connection) {
+          if (err) {
+            const error = {
+                status: 400,
+                result: err.message
+            }
+            next(error)
+          }
+
+          if (connection) {
+            let { firstName, isActive } = req.body
+            connection.query('SELECT * FROM user',
+            (err, rows, fields) => {
+              connection.release()
+              if (err) {
+                const error = {
+                    status: 400,
+                    result: err.message
+                }
+                next(error)
+              }
+              if (rows) {
+                logger.trace('results: ', rows)
+                const mappedResults = rows.map((item, i) => {
+                  return {
+                    id: rows[i].insertId,
+                    firstName: rows[i].firstName,
+                    lastName: rows[i].lastName,
+                    emailAdress: rows[i].emailAdress,
+                    street: rows[i].street,
+                    city: rows[i].city,
+                    phonenumber: rows[i].phonenumber,
+                    isActive: rows[i].isActive
+                  }
+                })
+                res.status(200).json({
+                    status: 200,
+                    result: mappedResults
+                })
+              }
+            })
+          }
         })
     },
 

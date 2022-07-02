@@ -1,5 +1,7 @@
 const express = require('express')
+const logger = require('./src/config/config').logger
 const app = express()
+require('dotenv').config()
 const port = process.env.PORT || 3000
 const authenticationRouter = require('./src/routes/authentication.routes')
 const mealRouter = require('./src/routes/meal.routes')
@@ -14,9 +16,16 @@ app.all('*', (req, res, next) => {
     next()
 })
 
-app.use(authenticationRouter)
-app.use(mealRouter)
-app.use(userRouter)
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 200,
+        result: 'Hello World!'
+    })
+})
+
+app.use('/api', authenticationRouter)
+app.use('/api', mealRouter)
+app.use('/api', userRouter)
 
 app.all('*', (req, res) => {
     res.status(400).json({

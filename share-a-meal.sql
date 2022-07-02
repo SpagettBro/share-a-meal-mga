@@ -125,11 +125,11 @@ CREATE TABLE `user` (
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
 INSERT INTO `user` VALUES 
-(1,'Mariëtte','van den Dullemen',1,'m.vandullemen@server.nl','secret','','','',''),
-(2,'John','Doe',1,'j.doe@server.com','secret','06 12425475','editor,guest','',''),
-(3,'Herman','Huizinga',1,'h.huizinga@server.nl','secret','06-12345678','editor,guest','',''),
-(4,'Marieke','Van Dam',0,'m.vandam@server.nl','secret','06-12345678','editor,guest','',''),
-(5,'Henk','Tank',1,'h.tank@server.com','secret','06 12425495','editor,guest','','');
+(1,'Mariëtte','van den Dullemen',1,'m.vandullemen@server.nl','secret','0664613659','','Langedweil 69','Kamperland'),
+(2,'John','Doe',1,'j.doe@server.com','secret','06 12425475','editor,guest','Westerstraat 64','Enkhuizen'),
+(3,'Herman','Huizinga',1,'h.huizinga@server.nl','secret','06-12345678','editor,guest','Irisstraat 162','Rosmalen'),
+(4,'Marieke','Van Dam',0,'m.vandam@server.nl','secret','06-12345678','editor,guest','Willem Elsschotstraat 119','Wageningen'),
+(5,'Henk','Tank',1,'h.tank@server.com','secret','06 12425495','editor,guest','Doctor Struyckenstraat 85','Breda');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

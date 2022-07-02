@@ -5,14 +5,7 @@ const authenticationController = require('../controllers/authentication.controll
 
 authenticationRouter.use(bodyParser.json())
 
-authenticationRouter.get('/', (req, res) => {
-    res.status(200).json({
-        status: 200,
-        result: 'Hello World!'
-    })
-})
-
 //UC-101 Log in.
-authenticationRouter.post('/api/authentication', authenticationController.logIn)
+authenticationRouter.post('/authentication', authenticationController.logIn)
 
 module.exports = authenticationRouter
