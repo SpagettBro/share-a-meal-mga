@@ -36,7 +36,12 @@ app.all('*', (req, res) => {
 
 //Error Handler
 app.use((err,req,res,next)=>{
-    res.status(err.status).json(err)
+    res.locals.error = err;
+    const status = err.status || 500;
+    res.status(500).json({
+        statusCode: status,
+        message: err.message,
+    })
 })
 
 app.listen(port, () => {

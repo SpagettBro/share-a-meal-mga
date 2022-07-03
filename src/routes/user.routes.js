@@ -2,6 +2,7 @@ const express = require("express")
 const bodyParser = require('body-parser')
 const userRouter = express.Router();
 const userController = require('../controllers/user.controller');
+const authenticationController = require("../controllers/authentication.controller");
 
 userRouter.use(bodyParser.json())
 

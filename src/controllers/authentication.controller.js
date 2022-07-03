@@ -1,157 +1,214 @@
-const assert = require('assert')
-const dbconnection = require('../database/dbconnection')
-const logger = require('../config/config').logger
+const assert = require("assert");
+const dbconnection = require("../database/dbconnection");
+const logger = require("../config/config").logger;
+const jwt = require("jsonwebtoken");
+const { userInfo } = require("os");
+const jwtSecretKey = require("../config/config").jwtSecretKey;
 
 let authenticationController = {
-    login(req, res, next) {
-        pool.getConnection((err, connection) => {
-          if (err) {
-            logger.error('Error getting connection from pool')
-            res
-              .status(500)
-              .json({ message: err.toString() })
-          }
-          if (connection) {
-            // Check if the account exists.
-            connection.query(
-              'SELECT `id`, `firstName`, `lastName`, `emailAdress`, `password`, `phonenumber`, `roles`, `street`, `city` FROM `user` WHERE `emailAdress` = ?',
-              [req.body.emailAdress],
-              (err, rows, fields) => {
-                connection.release()
-                if (err) {
-                  logger.error('Error: ', err.toString())
-                  res.status(500).json({
-                    Message: err.toString()
-                  })
-                } else {
-                  // There was a result, check the password.
-                  logger.info('Database responded: ')
-                  logger.info(rows)
-                  try {
-                    if (
-                      rows[0].password == req.body.password
-                    ) {
-                      logger.info('passwords DID match, sending valid token')
-                      // Create an object containing the data we want in the payload.
-                      const payload = {
-                        id: rows[0].id
-                      }
-                      // Userinfo returned to the caller.
-                      const userinfo = {
-                        id: rows[0].id,
-                        firstName: rows[0].firstName,
-                        lastName: rows[0].lasrName,
-                        password: rows[0].password,
-                        phonenumber: rows[0].phonenumber,
-                        roles: rows[0].roles,
-                        street: rows[0].street,
-                        city: rows[0].city,
-                        token: jwt.sign(payload, jwtSecretKey, { expiresIn: '2h' })
-                      }
-                      logger.debug('Logged in, sending: ', userinfo)
-                      res.status(200).json(userinfo)
-                      next()
-                    } else {
-                      logger.info('Error user password invalid')
-                      res.status(400).json({
-                        Message: 'Error: user password invalid'
-                      })
-                    }
-                  } catch (error) {
-                    logger.info('Error user email not found')
-                    res.status(400).json({
-                      Message: 'Error: user email not found'
-                    })
-                  }
-                }
-              }
-            )
-          }
-        })
-      },
+    logIn: (req, res, next) => {
+        dbconnection.getConnection((err, connection) => {
+            if (err) {
+                logger.error("error getting connection from dbconnection");
+                const error = {
+                    status: 500,
+                    result: err.message,
+                };
+                next(error);
+            }
+            if (connection) {
+                // Check if the account exists.
+                connection.query(
+                    "SELECT * FROM `user` WHERE `emailAdress` = ?",
+                    [req.body.emailAdress],
+                    (err, rows, fields) => {
+                        connection.release();
+                        if (err) {
+                            logger.error("error: ", err.toString());
+                            const error = {
+                                status: 422,
+                                result: err.message,
+                            };
+                            next(error);
+                        } else if (
+                            rows &&
+                            rows.length === 1 &&
+                            rows[0].password == req.body.password
+                        ) {
+                            logger.info(
+                                "passwords DID match, sending userinfo and valid token"
+                            );
+                            // Extract the password from the userdata - we do not send that in the response.
+                            const { password, ...userinfo } = rows[0];
+                            // Create an object containing the data we want in the payload.
+                            const payload = {
+                                userId: userinfo.id,
+                            };
 
-    validateToken(req, res, next) {
-        logger.info('validateToken called')
+                            jwt.sign(
+                                payload,
+                                jwtSecretKey,
+                                { expiresIn: "12d" },
+                                function (err, token) {
+                                    logger.debug("User logged in, sending: ", userinfo);
+                                    res.status(201).json({
+                                        statusCode: 201,
+                                        results: { ...userinfo, token },
+                                    });
+                                }
+                            );
+                        } else if (rows.length === 0) {
+                            logger.info("error user does not exist");
+                            const error = {
+                                status: 404,
+                                result: "error user does not exist",
+                            };
+                            next(error);
+                        } else {
+                            logger.info("error user password or email invalid");
+                            const error = {
+                                status: 400,
+                                result: "error user password or email invalid",
+                            };
+                            next(error);
+                        }
+                    }
+                );
+            }
+        });
+    },
+    validateEmail: (req, res, next) => {
+        if (
+            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(req.body.emailAdress)
+        ) {
+            logger.info("Email is vallid");
+            next();
+        } else {
+            logger.info("Email is not valid");
+            const error = {
+                status: 400,
+                result: "Email is not valid",
+            };
+            next(error);
+        }
+    },
+
+    validatePhone: (req, res, next) => {
+        if (
+            /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/.test(
+                req.body.phoneNumber
+            )
+        ) {
+            logger.info("Phonenumber is vallid");
+            next();
+        } else {
+            logger.info("Phonenumber is not vallid");
+            const error = {
+                status: 400,
+                result: "Phonenumber is not vallid",
+            };
+            next(error);
+        }
+    },
+
+    validateMealRegister: (req, res, next) => {
+        // Verify that we receive the expected input
+        console.log("Reached Validation");
+        try {
+            assert(typeof req.body.name === "string", "name must be a string");
+            assert(
+                typeof req.body.dateTime === "string",
+                "dateTime must be a string"
+            );
+
+            assert(
+                typeof req.body.imageUrl === "string",
+                "imageUrl must be a string"
+            );
+
+            assert(typeof req.body.price === "string", "price must be a string");
+            console.log("validation completed");
+            next();
+        } catch (err) {
+            console.log("validateRegister error: ", err);
+            const error = {
+                status: 400,
+                result: "validateRegister error: " + err.message,
+            };
+            next(error);
+        }
+    },
+
+    validateUserRegister: (req, res, next) => {
+        // Verify that we receive the expected input
+        console.log("Reached Validation");
+        try {
+            assert(
+                typeof req.body.firstName === "string",
+                "firstName must be a string"
+            );
+            assert(
+                typeof req.body.lastName === "string",
+                "lastName must be a string"
+            );
+
+            assert(typeof req.body.street === "string", "password must be a string");
+
+            assert(typeof req.body.city === "string", "password must be a string");
+
+            assert(
+                typeof req.body.password === "string",
+                "password must be a string"
+            );
+            console.log("validation completed");
+            next();
+        } catch (err) {
+            console.log("validateRegister error: ", err);
+            console.log("validateRegister error: ", err);
+            const error = {
+                status: 400,
+                result: err.message,
+            };
+            next(error);
+        }
+    },
+
+    validateUserToken: (req, res, next) => {
+        logger.info("validateToken called");
         // logger.trace(req.headers)
         // The headers should contain the authorization-field with value 'Bearer [token]'
-        const authHeader = req.headers.authorization
+        const authHeader = req.headers.authorization;
         if (!authHeader) {
-          logger.warn('Authorization header missing!')
-          res.status(401).json({
-            error: 'Authorization header missing!',
-            datetime: new Date().toISOString()
-          })
+            logger.warn("Authorization header missing!");
+            const error = {
+                status: 401,
+                result: "Authorization header missing!",
+                datetime: new Date().toISOString(),
+            };
+            next(error);
         } else {
-          // Strip the word 'Bearer ' from the headervalue
-          const token = authHeader.substring(7, authHeader.length)
-    
-          jwt.verify(token, jwtSecretKey, (err, payload) => {
-            if (err) {
-              logger.warn('Not authorized')
-              res.status(401).json({
-                error: 'Not authorized',
-                datetime: new Date().toISOString()
-              })
-            }
-            if (payload) {
-              logger.debug('token is valid', payload)
-              // User heeft toegang. Voeg UserId uit payload toe aan
-              // request, voor ieder volgend endpoint.
-              req.userId = payload.id
-              next()
-            }
-          })
-        }
-      },
-    
-      renewToken(req, res) {
-        logger.debug('renewToken')
-    
-        pool.getConnection((err, connection) => {
-          if (err) {
-            logger.error('Error getting connection from pool')
-            res
-              .status(500)
-              .json({ error: err.toString(), datetime: new Date().toISOString() })
-          }
-          if (connection) {
-            // 1. Kijk of deze useraccount bestaat.
-            connection.query(
-              'SELECT * FROM `user` WHERE `id` = ?',
-              [req.userId],
-              (err, rows, fields) => {
-                connection.release()
-                if (err) {
-                  logger.error('Error: ', err.toString())
-                  res.status(500).json({
-                    error: err.toString(),
-                    datetime: new Date().toISOString()
-                  })
-                } else {
-                  // 2. User gevonden, return user info met nieuw token.
-                  // Create an object containing the data we want in the payload.
-                  const payload = {
-                    id: rows[0].ID
-                  }
-                  // Userinfo returned to the caller.
-                  const userinfo = {
-                    id: rows[0].id,
-                    firstName: rows[0].firstname,
-                    lastName: rows[0].lastname,
-                    emailAdress: rows[0].emailAdress,
-                    token: jwt.sign(payload, jwtSecretKey, { expiresIn: '24h' })
-                  }
-                  logger.debug('Sending: ', userinfo)
-                  res.status(200).json(userinfo)
-                }
-              }
-            )
-            // pool.end((err)=>{
-            //   console.log('Pool was colsed');
-            // })
-          }
-        })
-      }
-}
+            // Strip the word 'Bearer ' from the headervalue
+            const token = authHeader.substring(7, authHeader.length);
 
-module.exports = authenticationController
+            jwt.verify(token, jwtSecretKey, (err, payload) => {
+                if (err) {
+                    logger.warn("Not authorized");
+                    const error = {
+                        status: 401,
+                        result: "Not authorized",
+                    };
+                    next(error);
+                }
+                if (payload) {
+                    logger.debug("token is valid", payload);
+                    // User has acces, add the userId to the user for next use.
+                    req.userId = payload.userId;
+                    logger.debug(req.userId);
+                    next();
+                }
+            });
+        }
+    },
+};
+
+module.exports = authenticationController;
