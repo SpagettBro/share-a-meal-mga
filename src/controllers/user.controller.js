@@ -205,8 +205,8 @@ let userController = {
                             res.status(400).json({
                                 message: err.toString()
                             })
-                        } else if (rows && rows.length === 1) {
-                            if (req.userId === rows[0].id) {
+                        } else if (rows) {
+                            if (req.userId === rows[0]) {
                                 dbconnection.getConnection((err, connection) => {
                                     if (err) {
                                         logger.error('error getting connection from dbconnection')
